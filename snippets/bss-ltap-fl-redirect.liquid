@@ -1,22 +1,30 @@
+{%- comment %}
+    Author: BSS B2B Login
+
+    DO NOT MODIFY. The contents of BSS B2B Login 
+    will overwrite any changes in the next update.
+
+    Updated at: Mon Feb 09 2026
+{% endcomment -%}
 <script id="bss-ltap-fl-redirect" type="text/javascript">
-const skipDomains = ['minimo-skin-essentials-wholesale.myshopify.com'];
-function runInLoginPage() {
+  const skipDomains = ['minimo-skin-essentials-wholesale.myshopify.com'];
+  function runInLoginPage() {
   function insertElement(id) {
     const BSS = JSON.parse(localStorage.getItem("BSS")) || "";
     let createCustomer = document.getElementById(id);
     if (BSS && BSS.redirect_url && createCustomer) {
       const returnToInput = document.createElement('input');
       returnToInput.type = 'hidden';
-      returnToInput.name = 'return_to';
+      returnToInput.name = 'return_to';    
       returnToInput.value = BSS.redirect_url;
       createCustomer.appendChild(returnToInput);
     }
   }
 
   insertElement("customer_login");
-}
+  }
 
-function runInRegisterPage() {
+  function runInRegisterPage() {
   if(skipDomains.includes(window.Shopify.shop)) {
     return;
   }
@@ -94,13 +102,20 @@ function runInRegisterPage() {
       return regex.test(email);
     }
   }
-}
+  }
 
-if (window.location.pathname === "/account/login") {
-  runInLoginPage();
-}
+  if (window.location.pathname.includes("/account/login")) {
+    if (window.Shopify.shop === "protegisparts.myshopify.com") { 
+      setTimeout(() => {
+        runInLoginPage();
+      }, 3000)
+    } else {
+      runInLoginPage();    
+    }
+  }
 
-if (window.location.pathname === "/account/register") {
+
+  if (window.location.pathname === "/account/register") {
   runInRegisterPage();
-}
+  }
 </script>

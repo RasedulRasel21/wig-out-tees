@@ -109,6 +109,14 @@
         "padding_bottom": 12
       }
     },
+    "product-configurator": {
+      "type": "product-configurator",
+      "settings": {
+        "heading": "Product Configurator",
+        "padding_top": 36,
+        "padding_bottom": 36
+      }
+    },
     "related-products": {
       "type": "related-products",
       "disabled": true,
@@ -130,6 +138,7 @@
   },
   "order": [
     "main",
+    "product-configurator",
     "related-products"
   ]
 }

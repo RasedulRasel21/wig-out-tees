@@ -215,26 +215,6 @@
                       {%- endif -%}
                     </div>
                   </td>
-<div class="cart__custom-field" style="margin-bottom: 1.5rem;">
-  <label for="custom-name" style="display:block; font-weight:600;">*REQUIRED FOR DELIVERY TO SCHOOL* Students Name <span style="color:red;">*</span></label>
-  <input id="custom-name" name="attributes[Name]" type="text" required placeholder="Please enter students name" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;">
-</div>
-
-<script>
-  document.addEventListener('DOMContentLoaded', function() {
-    const cartForm = document.querySelector('form[action="/cart"]');
-    const nameField = document.getElementById('custom-name');
-    if (cartForm && nameField) {
-      cartForm.addEventListener('submit', function(e) {
-        if (!nameField.value.trim()) {
-          e.preventDefault();
-          alert('Please enter your name before continuing to checkout.');
-          nameField.focus();
-        }
-      });
-    }
-  });
-</script>
                   <td class="cart-item__quantity">
                     <div class="cart-item__quantity-wrapper">
                       <label class="visually-hidden" for="Quantity-{{ item.index | plus: 1 }}">

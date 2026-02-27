@@ -1,0 +1,1102 @@
+{% comment %}
+  Product Configurator Section
+  Displays below the main product info with 5 variant groups,
+  a visibility control panel, and an order summary.
+{% endcomment %}
+
+{%- style -%}
+  /* ── Section padding ────────────────────────────── */
+  .section-{{ section.id }}-padding {
+    padding-top: {{ section.settings.padding_top | times: 0.75 | round: 0 }}px;
+    padding-bottom: {{ section.settings.padding_bottom | times: 0.75 | round: 0 }}px;
+  }
+  @media screen and (min-width: 750px) {
+    .section-{{ section.id }}-padding {
+      padding-top: {{ section.settings.padding_top }}px;
+      padding-bottom: {{ section.settings.padding_bottom }}px;
+    }
+  }
+
+  /* ── Root variables ─────────────────────────────── */
+  #pc-root {
+    --pc-indigo-50:  #EEF2FF;
+    --pc-indigo-100: #E0E7FF;
+    --pc-indigo-400: #818CF8;
+    --pc-indigo-500: #6366F1;
+    --pc-indigo-600: #4F46E5;
+    --pc-indigo-700: #4338CA;
+    --pc-indigo-800: #3730A3;
+    --pc-indigo-900: #312E81;
+    --pc-indigo-950: #1E1B4B;
+    --pc-violet-700: #6D28D9;
+    --pc-emerald:    #10B981;
+    --pc-amber-50:   #FFFBEB;
+    --pc-amber-100:  #FEF3C7;
+    --pc-amber-400:  #FBBF24;
+    --pc-amber-500:  #F59E0B;
+    --pc-slate-100:  #F1F5F9;
+    --pc-slate-200:  #E2E8F0;
+    --pc-slate-400:  #94A3B8;
+    --pc-slate-500:  #64748B;
+    --pc-slate-600:  #475569;
+    --pc-slate-700:  #334155;
+    --pc-slate-800:  #1E293B;
+    --pc-white:      #FFFFFF;
+    --pc-radius:     14px;
+    --pc-radius-sm:  10px;
+    --pc-shadow:     0 1px 4px rgba(0,0,0,.07), 0 4px 16px rgba(0,0,0,.05);
+
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Layout ─────────────────────────────────────── */
+  #pc-root { box-sizing: border-box; }
+  #pc-root *, #pc-root *::before, #pc-root *::after { box-sizing: inherit; }
+
+  .pc-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  @media (min-width: 768px) {
+    .pc-layout {
+      grid-template-columns: 200px 1fr;
+    }
+  }
+  @media (min-width: 1100px) {
+    .pc-layout {
+      grid-template-columns: 210px 1fr 288px;
+    }
+  }
+
+  /* ── Section heading ─────────────────────────────── */
+  .pc-heading {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--pc-slate-800);
+    letter-spacing: -.03em;
+    margin: 0 0 20px;
+  }
+  .pc-heading span {
+    color: var(--pc-indigo-600);
+  }
+
+  /* ── Card base ───────────────────────────────────── */
+  .pc-card {
+    background: var(--pc-white);
+    border: 1px solid var(--pc-slate-200);
+    border-radius: var(--pc-radius);
+    box-shadow: var(--pc-shadow);
+    overflow: hidden;
+  }
+
+  /* ── Control Panel ───────────────────────────────── */
+  .pc-ctrl-panel {
+    background: linear-gradient(160deg, var(--pc-indigo-950) 0%, var(--pc-indigo-900) 100%);
+    border: 1px solid rgba(255,255,255,.07);
+    border-radius: var(--pc-radius);
+    overflow: hidden;
+  }
+  .pc-ctrl-header {
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+  }
+  .pc-ctrl-title {
+    display: flex; align-items: center; gap: 7px;
+    color: var(--pc-white);
+    font-size: 13px; font-weight: 700; letter-spacing: -.01em;
+    margin: 0 0 2px;
+  }
+  .pc-ctrl-title svg { color: var(--pc-indigo-400); flex-shrink: 0; }
+  .pc-ctrl-subtitle {
+    color: var(--pc-indigo-400);
+    font-size: 11px; font-weight: 500; margin: 0;
+  }
+  .pc-ctrl-items { padding: 8px; }
+  .pc-ctrl-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 9px 10px;
+    border-radius: 9px;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .pc-ctrl-item:hover { background: rgba(255,255,255,.06); }
+  .pc-ctrl-item-left {
+    display: flex; align-items: center; gap: 9px; flex: 1; min-width: 0;
+  }
+  .pc-ctrl-icon { font-size: 16px; line-height: 1; flex-shrink: 0; }
+  .pc-ctrl-name {
+    font-size: 12px; font-weight: 600; color: var(--pc-white);
+    line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .pc-ctrl-status {
+    font-size: 10.5px; margin-top: 2px; line-height: 1;
+  }
+  .pc-ctrl-status.on  { color: var(--pc-emerald); }
+  .pc-ctrl-status.off { color: #6B7280; }
+  .pc-ctrl-footer { padding: 0 8px 8px; display: flex; flex-direction: column; gap: 6px; }
+  .pc-ctrl-btn {
+    width: 100%; padding: 7px; border-radius: 8px;
+    font-size: 11.5px; font-weight: 600; cursor: pointer;
+    transition: background .15s, color .15s; border: none; text-align: center;
+  }
+  .pc-ctrl-btn-primary {
+    background: var(--pc-indigo-700);
+    color: var(--pc-white);
+  }
+  .pc-ctrl-btn-primary:hover { background: var(--pc-indigo-600); }
+  .pc-ctrl-btn-ghost {
+    background: transparent;
+    color: var(--pc-indigo-400);
+    border: 1px solid rgba(255,255,255,.12) !important;
+  }
+  .pc-ctrl-btn-ghost:hover { background: rgba(255,255,255,.07); color: #C7D2FE; }
+
+  /* Progress mini card */
+  .pc-progress-card {
+    margin-top: 12px;
+    background: var(--pc-white);
+    border: 1px solid var(--pc-slate-200);
+    border-radius: var(--pc-radius);
+    padding: 14px;
+    box-shadow: var(--pc-shadow);
+  }
+  .pc-progress-label {
+    font-size: 9.5px; font-weight: 800; text-transform: uppercase;
+    letter-spacing: .1em; color: var(--pc-slate-400); margin-bottom: 11px;
+  }
+  .pc-progress-row {
+    display: flex; align-items: center; gap: 9px; margin-bottom: 9px;
+  }
+  .pc-progress-row:last-child { margin-bottom: 0; }
+  .pc-progress-dot {
+    width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .pc-progress-dot.done { background: var(--pc-indigo-600); }
+  .pc-progress-dot.todo { background: var(--pc-slate-200); }
+  .pc-progress-dot svg { width: 9px; height: 9px; color: white; }
+  .pc-progress-item-label {
+    font-size: 11px; font-weight: 600; color: var(--pc-slate-700); line-height: 1;
+  }
+  .pc-progress-item-val {
+    font-size: 10.5px; margin-top: 2px; line-height: 1;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;
+  }
+  .pc-progress-item-val.done { color: var(--pc-indigo-600); }
+  .pc-progress-item-val.todo { color: var(--pc-slate-400); }
+
+  /* ── Toggle switch ───────────────────────────────── */
+  .pc-tog { position: relative; display: inline-block; width: 40px; height: 22px; flex-shrink: 0; }
+  .pc-tog input { opacity: 0; width: 0; height: 0; position: absolute; }
+  .pc-tog-track {
+    position: absolute; inset: 0;
+    background: #374151;
+    border-radius: 22px;
+    transition: background .26s ease;
+    cursor: pointer;
+  }
+  .pc-tog-track::before {
+    content: '';
+    position: absolute;
+    width: 16px; height: 16px;
+    left: 3px; top: 3px;
+    background: white;
+    border-radius: 50%;
+    transition: transform .26s cubic-bezier(.4,0,.2,1);
+    box-shadow: 0 1px 4px rgba(0,0,0,.25);
+  }
+  .pc-tog input:checked + .pc-tog-track { background: var(--pc-emerald); }
+  .pc-tog input:checked + .pc-tog-track::before { transform: translateX(18px); }
+
+  /* ── Variant sections ────────────────────────────── */
+  .pc-sections { display: flex; flex-direction: column; gap: 0; }
+
+  .pc-section-wrap {
+    display: grid;
+    grid-template-rows: 1fr;
+    opacity: 1;
+    margin-bottom: 14px;
+    transition:
+      grid-template-rows .38s cubic-bezier(.4,0,.2,1),
+      opacity .3s ease,
+      margin-bottom .38s ease;
+  }
+  .pc-section-wrap.pc-collapsed {
+    grid-template-rows: 0fr;
+    opacity: 0;
+    margin-bottom: 0;
+  }
+  .pc-section-inner { overflow: hidden; }
+
+  /* Section card header */
+  .pc-sec-header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--pc-slate-100);
+    gap: 12px;
+  }
+  .pc-sec-header-left { display: flex; align-items: center; gap: 11px; }
+  .pc-sec-icon-wrap {
+    width: 36px; height: 36px;
+    background: var(--pc-indigo-50);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px; line-height: 1; flex-shrink: 0;
+  }
+  .pc-sec-title {
+    font-size: 14.5px; font-weight: 700; color: var(--pc-slate-800);
+    letter-spacing: -.02em; margin: 0 0 2px;
+  }
+  .pc-sec-desc {
+    font-size: 11px; color: var(--pc-slate-400); font-weight: 500; margin: 0;
+  }
+  .pc-sec-badge-done {
+    display: flex; align-items: center; gap: 5px;
+    background: var(--pc-indigo-50);
+    color: var(--pc-indigo-700);
+    border-radius: 20px;
+    padding: 5px 11px;
+    font-size: 11.5px; font-weight: 600;
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .pc-sec-badge-done svg { width: 11px; height: 11px; flex-shrink: 0; }
+  .pc-sec-badge-req {
+    background: var(--pc-amber-100);
+    color: #92400E;
+    border: 1px solid #FDE68A;
+    border-radius: 20px;
+    padding: 5px 11px;
+    font-size: 11.5px; font-weight: 600;
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .pc-sec-body { padding: 16px 18px 18px; }
+
+  /* ── Option buttons ──────────────────────────────── */
+  .pc-opts { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  .pc-btn {
+    padding: 8px 16px;
+    border-radius: var(--pc-radius-sm);
+    border: 2px solid var(--pc-slate-200);
+    background: var(--pc-white);
+    color: var(--pc-slate-700);
+    font-size: 13px; font-weight: 500;
+    cursor: pointer;
+    transition: border-color .14s, background .14s, color .14s, box-shadow .14s, transform .1s;
+    white-space: nowrap;
+    line-height: 1.2;
+    font-family: inherit;
+  }
+  .pc-btn:hover {
+    border-color: var(--pc-indigo-400);
+    background: var(--pc-indigo-50);
+    color: var(--pc-indigo-700);
+    transform: translateY(-1px);
+  }
+  .pc-btn.pc-sel {
+    border-color: var(--pc-indigo-600);
+    background: var(--pc-indigo-600);
+    color: var(--pc-white);
+    box-shadow: 0 3px 12px rgba(79,70,229,.3);
+    transform: translateY(-1px);
+  }
+  .pc-btn.pc-size { min-width: 54px; text-align: center; }
+
+  /* Size group */
+  .pc-size-groups { display: flex; flex-direction: column; gap: 14px; }
+  .pc-size-group-label {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .09em; color: var(--pc-slate-400); margin-bottom: 7px;
+  }
+
+  /* ── Color swatches ──────────────────────────────── */
+  .pc-colors { display: flex; flex-wrap: wrap; gap: 14px; }
+  .pc-clr-btn {
+    display: flex; flex-direction: column; align-items: center; gap: 5px;
+    cursor: pointer; background: none; border: none; padding: 0;
+    transition: transform .14s;
+    font-family: inherit;
+  }
+  .pc-clr-btn:hover { transform: translateY(-3px); }
+  .pc-swatch {
+    width: 44px; height: 44px; border-radius: 50%;
+    border: 3px solid transparent;
+    box-shadow: 0 2px 8px rgba(0,0,0,.16);
+    position: relative; overflow: hidden;
+    transition: border-color .2s, box-shadow .2s;
+    flex-shrink: 0;
+  }
+  .pc-swatch.heather::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(
+      -45deg, transparent, transparent 3px,
+      rgba(255,255,255,.16) 3px, rgba(255,255,255,.16) 6px
+    );
+  }
+  .pc-swatch.light { border-color: var(--pc-slate-200) !important; }
+  .pc-clr-btn.pc-sel .pc-swatch {
+    border-color: var(--pc-indigo-600);
+    box-shadow: 0 0 0 3px #C7D2FE, 0 2px 10px rgba(0,0,0,.18);
+  }
+  .pc-clr-btn.pc-sel .pc-swatch.light { border-color: var(--pc-indigo-600) !important; }
+  .pc-clr-label {
+    font-size: 10px; font-weight: 500; color: var(--pc-slate-500);
+    text-align: center; line-height: 1.2; max-width: 52px;
+  }
+  .pc-clr-btn.pc-sel .pc-clr-label { color: var(--pc-indigo-700); font-weight: 700; }
+
+  /* ── Order Summary ───────────────────────────────── */
+  .pc-summary { overflow: hidden; }
+  .pc-summary-head {
+    background: linear-gradient(135deg, var(--pc-indigo-600) 0%, var(--pc-violet-700) 100%);
+    padding: 16px 18px;
+  }
+  .pc-summary-top {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;
+  }
+  .pc-summary-title {
+    font-size: 15px; font-weight: 800; color: white;
+    letter-spacing: -.02em; margin: 0;
+  }
+  .pc-summary-count {
+    font-size: 11px; font-weight: 600; color: rgba(255,255,255,.7);
+    background: rgba(255,255,255,.15);
+    border-radius: 20px; padding: 3px 10px;
+  }
+  .pc-prog-track {
+    height: 5px; background: rgba(255,255,255,.25);
+    border-radius: 5px; overflow: hidden;
+  }
+  .pc-prog-bar {
+    height: 100%; background: white; border-radius: 5px;
+    transition: width .45s cubic-bezier(.4,0,.2,1);
+  }
+  .pc-prog-ends {
+    display: flex; justify-content: space-between;
+    margin-top: 4px;
+    font-size: 9.5px; color: rgba(255,255,255,.5); font-weight: 500;
+  }
+
+  .pc-summary-body { padding: 14px; min-height: 120px; }
+  .pc-empty-state {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 20px 0; text-align: center;
+    font-size: 13px; color: var(--pc-slate-400);
+    gap: 6px;
+  }
+  .pc-empty-state-icon { font-size: 28px; opacity: .5; }
+
+  /* Order item */
+  .pc-order-item {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--pc-indigo-50);
+    border-radius: 10px; padding: 9px 11px;
+    margin-bottom: 7px;
+    animation: pcSlideIn .22s ease forwards;
+  }
+  .pc-order-num {
+    width: 20px; height: 20px; border-radius: 50%;
+    background: var(--pc-indigo-600);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 800; color: white; flex-shrink: 0;
+  }
+  .pc-order-info { flex: 1; min-width: 0; }
+  .pc-order-key {
+    font-size: 9.5px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .07em; color: var(--pc-indigo-400); line-height: 1; margin-bottom: 2px;
+  }
+  .pc-order-val {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 13px; font-weight: 700; color: var(--pc-indigo-800);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .pc-order-color-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    border: 1.5px solid rgba(0,0,0,.1); flex-shrink: 0;
+  }
+  .pc-order-clear {
+    width: 22px; height: 22px; border-radius: 50%; border: none;
+    display: flex; align-items: center; justify-content: center;
+    background: transparent; cursor: pointer; flex-shrink: 0;
+    color: var(--pc-slate-400); opacity: 0;
+    transition: opacity .15s, background .15s, color .15s;
+    font-family: inherit;
+  }
+  .pc-order-item:hover .pc-order-clear { opacity: 1; }
+  .pc-order-clear:hover { background: #FEE2E2; color: #DC2626; }
+  .pc-order-clear svg { width: 11px; height: 11px; }
+
+  /* Required item */
+  .pc-req-item {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--pc-amber-50);
+    border: 1px solid #FDE68A;
+    border-radius: 10px; padding: 9px 11px; margin-bottom: 7px;
+  }
+  .pc-req-q {
+    width: 20px; height: 20px; border-radius: 50%;
+    background: #FCD34D;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 800; color: #92400E; flex-shrink: 0;
+  }
+  .pc-req-key {
+    font-size: 9.5px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .07em; color: var(--pc-amber-500); line-height: 1; margin-bottom: 2px;
+  }
+  .pc-req-val {
+    font-size: 12px; font-weight: 600; color: #92400E;
+  }
+
+  /* Divider */
+  .pc-divider { height: 1px; background: var(--pc-slate-100); margin: 0 14px; }
+
+  /* Add to cart */
+  .pc-atc-wrap { padding: 14px; }
+  .pc-atc {
+    width: 100%; padding: 13px;
+    border-radius: 11px; border: none;
+    font-size: 14px; font-weight: 700; letter-spacing: -.01em;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    cursor: pointer; transition: all .22s ease; font-family: inherit;
+  }
+  .pc-atc.ready {
+    background: linear-gradient(135deg, var(--pc-indigo-600) 0%, var(--pc-violet-700) 100%);
+    color: white;
+    animation: pcGlow 2.5s ease-in-out infinite;
+  }
+  .pc-atc.ready:hover { transform: translateY(-2px); filter: brightness(1.1); }
+  .pc-atc.locked { background: var(--pc-slate-200); color: var(--pc-slate-400); cursor: not-allowed; }
+  .pc-atc svg { width: 18px; height: 18px; }
+  .pc-atc-note {
+    text-align: center; font-size: 11px; margin-top: 6px; margin-bottom: 0;
+  }
+  .pc-atc-note.ready  { color: #059669; font-weight: 600; }
+  .pc-atc-note.locked { color: var(--pc-slate-400); }
+
+  /* ── Mobile summary ──────────────────────────────── */
+  .pc-mobile-summary { margin-top: 14px; }
+  @media (min-width: 1100px) {
+    .pc-mobile-summary { display: none; }
+  }
+  .pc-desktop-summary { display: none; }
+  @media (min-width: 1100px) {
+    .pc-desktop-summary { display: block; }
+  }
+
+  /* ── Mobile control panel toggle ────────────────── */
+  .pc-mob-toggle {
+    display: flex; align-items: center; justify-content: space-between;
+    background: linear-gradient(135deg, var(--pc-indigo-950), var(--pc-indigo-900));
+    color: white;
+    border: none; width: 100%; padding: 13px 16px;
+    border-radius: var(--pc-radius); cursor: pointer;
+    font-size: 13px; font-weight: 700; font-family: inherit;
+    margin-bottom: 12px;
+  }
+  .pc-mob-toggle-left { display: flex; align-items: center; gap: 8px; }
+  .pc-mob-toggle svg { color: var(--pc-indigo-400); }
+  .pc-mob-chevron { transition: transform .3s ease; }
+  .pc-mob-chevron.open { transform: rotate(180deg); }
+  .pc-mob-panel {
+    display: grid; grid-template-rows: 0fr;
+    opacity: 0;
+    transition: grid-template-rows .35s ease, opacity .3s ease;
+    margin-bottom: 0;
+  }
+  .pc-mob-panel.open {
+    grid-template-rows: 1fr;
+    opacity: 1;
+    margin-bottom: 14px;
+  }
+  .pc-mob-panel-inner { overflow: hidden; }
+  .pc-mob-panel-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: rgba(255,255,255,.08);
+    border-radius: var(--pc-radius);
+    overflow: hidden;
+  }
+  @media (min-width: 768px) { .pc-mob-toggle { display: none; } }
+  @media (min-width: 768px) { .pc-mob-panel { display: none !important; } }
+
+  /* ── Toast ───────────────────────────────────────── */
+  .pc-toast {
+    position: fixed; bottom: 24px; left: 50%;
+    transform: translateX(-50%) translateY(12px);
+    z-index: 9999; pointer-events: none; opacity: 0;
+    transition: opacity .28s ease, transform .28s ease;
+  }
+  .pc-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .pc-toast-inner {
+    background: var(--pc-indigo-950);
+    color: white;
+    padding: 12px 18px;
+    border-radius: 14px;
+    font-size: 13px; font-weight: 500;
+    display: flex; align-items: flex-start; gap: 10px;
+    border: 1px solid rgba(255,255,255,.1);
+    box-shadow: 0 8px 32px rgba(0,0,0,.35);
+    max-width: 340px;
+  }
+  .pc-toast-inner svg { color: var(--pc-emerald); flex-shrink: 0; width: 18px; height: 18px; margin-top: 1px; }
+
+  /* ── Animations ──────────────────────────────────── */
+  @keyframes pcSlideIn {
+    from { opacity: 0; transform: translateX(10px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes pcGlow {
+    0%,100% { box-shadow: 0 4px 16px rgba(79,70,229,.3); }
+    50%      { box-shadow: 0 4px 26px rgba(79,70,229,.6); }
+  }
+{%- endstyle -%}
+
+<div id="pc-root" class="page-width section-{{ section.id }}-padding">
+
+  <h2 class="pc-heading">
+    {% if section.settings.heading != blank %}
+      {{ section.settings.heading | replace: 'Configurator', '<span>Configurator</span>' }}
+    {% else %}
+      Product <span>Configurator</span>
+    {% endif %}
+  </h2>
+
+  <!-- Mobile Control Panel Toggle -->
+  <button class="pc-mob-toggle" onclick="pcToggleMobilePanel()" id="pc-mob-btn">
+    <span class="pc-mob-toggle-left">
+      <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
+      </svg>
+      Variant Visibility Controls
+    </span>
+    <svg class="pc-mob-chevron" id="pc-mob-chevron" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+    </svg>
+  </button>
+
+  <!-- Mobile Panel -->
+  <div class="pc-mob-panel" id="pc-mob-panel">
+    <div class="pc-mob-panel-inner">
+      <div id="pc-mob-panel-content"></div>
+    </div>
+  </div>
+
+  <!-- 3-column layout -->
+  <div class="pc-layout">
+
+    <!-- LEFT: Desktop Control Panel -->
+    <div class="pc-ctrl-col" style="display:none;" id="pc-ctrl-desktop">
+      <div id="pc-ctrl-panel-content"></div>
+    </div>
+    <style>
+      @media (min-width: 768px) { #pc-ctrl-desktop { display: block !important; } }
+    </style>
+
+    <!-- CENTER: Variant sections -->
+    <div id="pc-variant-sections"></div>
+
+    <!-- RIGHT: Order summary (desktop) -->
+    <div class="pc-desktop-summary">
+      <div style="position: sticky; top: 20px;">
+        <div id="pc-summary-desktop"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- MOBILE: Order summary -->
+  <div class="pc-mobile-summary" id="pc-summary-mobile"></div>
+
+</div>
+
+<!-- Toast -->
+<div class="pc-toast" id="pc-toast">
+  <div class="pc-toast-inner">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+    <span id="pc-toast-text"></span>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ── Data ─────────────────────────────────────────── */
+  var COLORS = [
+    { name: 'Red',              hex: '#DC2626', heather: false, light: false },
+    { name: 'Heather Red',      hex: '#C53030', heather: true,  light: false },
+    { name: 'White',            hex: '#FFFFFF', heather: false, light: true  },
+    { name: 'Black',            hex: '#111827', heather: false, light: false },
+    { name: 'Carolina Blue',    hex: '#4299E1', heather: false, light: false },
+    { name: 'Graphite Heather', hex: '#6B7280', heather: true,  light: false },
+    { name: 'Navy',             hex: '#1E3A5F', heather: false, light: false },
+    { name: 'Royal',            hex: '#2563EB', heather: false, light: false },
+    { name: 'Purple',           hex: '#6D28D9', heather: false, light: false },
+    { name: 'Heather Purple',   hex: '#9333EA', heather: true,  light: false },
+  ];
+
+  var VARIANTS = {
+    style: {
+      key: 'style', label: 'Style', icon: '👕',
+      desc: 'Choose your garment type', type: 'text',
+      options: ['Short Sleeve','Long Sleeve','Crewneck','Hoodie','3/4 Zip Pullover','Full Zip Hoodie'],
+    },
+    brand: {
+      key: 'brand', label: 'Brand', icon: '⭐',
+      desc: 'Select your preferred brand', type: 'text',
+      options: ['Gildan','Bella Canvas','Adidas','Under Armour','Pennant','Paragon','Lane Seven','Next Level'],
+    },
+    size: {
+      key: 'size', label: 'Size', icon: '📏',
+      desc: 'Pick the right fit', type: 'size',
+      youth: ['Youth XS','Youth S','Youth M','Youth L','Youth XL'],
+      adult: ['Adult XS','Adult S','Adult M','Adult L','Adult XL','Adult 2XL','Adult 3XL','Adult 4XL'],
+    },
+    personalization: {
+      key: 'personalization', label: 'Personalization', icon: '✏️',
+      desc: 'Add a custom name or number', type: 'text',
+      options: ['None','Name Only','Number Only','Name & Number'],
+    },
+    color: {
+      key: 'color', label: 'Color', icon: '🎨',
+      desc: 'Choose your garment color', type: 'color',
+    },
+  };
+
+  var ORDER = ['style','brand','size','personalization','color'];
+
+  /* ── State ────────────────────────────────────────── */
+  var state = {
+    selections:   { style:null, brand:null, size:null, personalization:null, color:null },
+    visibility:   { style:true,  brand:true,  size:true,  personalization:true,  color:true  },
+    selectionLog: [],
+    mobPanelOpen: false,
+  };
+
+  /* ── Helpers ──────────────────────────────────────── */
+  function esc(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function selLabel(key) {
+    var s = state.selections[key];
+    if (!s) return null;
+    return key === 'color' ? s.name : s;
+  }
+
+  function visibleKeys() {
+    return ORDER.filter(function(k){ return state.visibility[k]; });
+  }
+
+  function allSelected() {
+    return visibleKeys().every(function(k){ return state.selections[k] !== null; });
+  }
+
+  function pct() {
+    var vk = visibleKeys();
+    if (!vk.length) return 0;
+    return Math.round(vk.filter(function(k){ return state.selections[k]; }).length / vk.length * 100);
+  }
+
+  /* ── Actions ──────────────────────────────────────── */
+  function selectOption(key, idx) {
+    var v = VARIANTS[key], value;
+    if (v.type === 'color') {
+      value = COLORS[idx];
+    } else if (v.type === 'size') {
+      var flat = v.youth.concat(v.adult);
+      value = flat[idx];
+    } else {
+      value = v.options[idx];
+    }
+
+    var cur = state.selections[key];
+    var same = v.type === 'color'
+      ? (cur && cur.name === value.name)
+      : cur === value;
+
+    state.selectionLog = state.selectionLog.filter(function(e){ return e.key !== key; });
+
+    if (same) {
+      state.selections[key] = null;
+    } else {
+      state.selections[key] = value;
+      state.selectionLog.push({ key: key, value: value });
+    }
+    renderAll();
+  }
+
+  function clearSelection(key) {
+    state.selections[key] = null;
+    state.selectionLog = state.selectionLog.filter(function(e){ return e.key !== key; });
+    renderAll();
+  }
+
+  function toggleVisibility(key) {
+    var wasOn = state.visibility[key];
+    state.visibility[key] = !wasOn;
+    if (wasOn && state.selections[key]) {
+      clearSelection(key);
+      return;
+    }
+    renderAll();
+  }
+
+  function showAll() {
+    ORDER.forEach(function(k){ state.visibility[k] = true; });
+    renderAll();
+  }
+
+  function resetSelections() {
+    ORDER.forEach(function(k){ state.selections[k] = null; });
+    state.selectionLog = [];
+    renderAll();
+  }
+
+  function handleAddToCart() {
+    if (!allSelected()) return;
+    var parts = state.selectionLog
+      .filter(function(e){ return state.visibility[e.key]; })
+      .map(function(e){
+        return VARIANTS[e.key].label + ': ' + (e.key === 'color' ? e.value.name : e.value);
+      });
+    showToast('Added to cart! ' + parts.join(' · '));
+  }
+
+  /* ── Control Panel HTML ───────────────────────────── */
+  function ctrlPanelHtml() {
+    var on = ORDER.filter(function(k){ return state.visibility[k]; }).length;
+    var rows = ORDER.map(function(key) {
+      var v = VARIANTS[key];
+      var isOn = state.visibility[key];
+      var sl = selLabel(key);
+      var statusText = isOn
+        ? (sl ? sl.substring(0,14) + (sl.length > 14 ? '…' : '') : 'Visible')
+        : 'Hidden';
+      return '<div class="pc-ctrl-item" onclick="pcToggleVis(\'' + key + '\')">'
+        + '<div class="pc-ctrl-item-left">'
+        + '<span class="pc-ctrl-icon">' + v.icon + '</span>'
+        + '<div>'
+        + '<div class="pc-ctrl-name">' + v.label + '</div>'
+        + '<div class="pc-ctrl-status ' + (isOn ? 'on' : 'off') + '">' + esc(statusText) + '</div>'
+        + '</div></div>'
+        + '<label class="pc-tog" onclick="event.stopPropagation()">'
+        + '<input type="checkbox"' + (isOn ? ' checked' : '') + ' onchange="pcToggleVis(\'' + key + '\')">'
+        + '<div class="pc-tog-track"></div>'
+        + '</label>'
+        + '</div>';
+    }).join('');
+
+    var progressRows = ORDER.map(function(key) {
+      if (!state.visibility[key]) return '';
+      var v = VARIANTS[key];
+      var sl = selLabel(key);
+      return '<div class="pc-progress-row">'
+        + '<div class="pc-progress-dot ' + (sl ? 'done' : 'todo') + '">'
+        + (sl ? '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>' : '')
+        + '</div>'
+        + '<div style="flex:1;min-width:0">'
+        + '<div class="pc-progress-item-label">' + v.label + '</div>'
+        + '<div class="pc-progress-item-val ' + (sl ? 'done' : 'todo') + '">' + esc(sl || 'Not selected') + '</div>'
+        + '</div></div>';
+    }).join('');
+
+    return '<div class="pc-ctrl-panel">'
+      + '<div class="pc-ctrl-header">'
+      + '<p class="pc-ctrl-title"><svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>Visibility Panel</p>'
+      + '<p class="pc-ctrl-subtitle">' + on + ' of 5 variants visible</p>'
+      + '</div>'
+      + '<div class="pc-ctrl-items">' + rows + '</div>'
+      + '<div class="pc-ctrl-footer">'
+      + '<button class="pc-ctrl-btn pc-ctrl-btn-primary" onclick="pcShowAll()">Show All</button>'
+      + '<button class="pc-ctrl-btn pc-ctrl-btn-ghost" onclick="pcReset()">Reset Selections</button>'
+      + '</div></div>'
+      + '<div class="pc-progress-card"><div class="pc-progress-label">Progress</div>' + progressRows + '</div>';
+  }
+
+  /* ── Mobile Panel HTML ────────────────────────────── */
+  function mobPanelHtml() {
+    var items = ORDER.map(function(key) {
+      var v = VARIANTS[key];
+      var isOn = state.visibility[key];
+      return '<div class="pc-ctrl-item" style="background:var(--pc-indigo-950);border:none;" onclick="pcToggleVis(\'' + key + '\')">'
+        + '<div class="pc-ctrl-item-left">'
+        + '<span class="pc-ctrl-icon">' + v.icon + '</span>'
+        + '<div>'
+        + '<div class="pc-ctrl-name">' + v.label + '</div>'
+        + '<div class="pc-ctrl-status ' + (isOn ? 'on' : 'off') + '">' + (isOn ? 'Visible' : 'Hidden') + '</div>'
+        + '</div></div>'
+        + '<label class="pc-tog" onclick="event.stopPropagation()">'
+        + '<input type="checkbox"' + (isOn ? ' checked' : '') + ' onchange="pcToggleVis(\'' + key + '\')">'
+        + '<div class="pc-tog-track"></div>'
+        + '</label></div>';
+    }).join('');
+
+    return '<div style="background:linear-gradient(160deg,var(--pc-indigo-950),var(--pc-indigo-900));border-radius:var(--pc-radius);overflow:hidden;border:1px solid rgba(255,255,255,.07);">'
+      + '<div class="pc-mob-panel-grid">' + items + '</div>'
+      + '<div class="pc-ctrl-footer" style="flex-direction:row;">'
+      + '<button class="pc-ctrl-btn pc-ctrl-btn-primary" style="flex:1" onclick="pcShowAll()">Show All</button>'
+      + '<button class="pc-ctrl-btn pc-ctrl-btn-ghost" style="flex:1" onclick="pcReset()">Reset</button>'
+      + '</div></div>';
+  }
+
+  /* ── Options HTML ─────────────────────────────────── */
+  function optionsHtml(key) {
+    var v = VARIANTS[key];
+
+    if (v.type === 'color') {
+      return '<div class="pc-colors">'
+        + COLORS.map(function(c, idx) {
+          var isSel = state.selections[key] && state.selections[key].name === c.name;
+          return '<button class="pc-clr-btn' + (isSel ? ' pc-sel' : '') + '" onclick="pcSel(\'' + key + '\',' + idx + ')" title="' + esc(c.name) + '">'
+            + '<div class="pc-swatch' + (c.heather ? ' heather' : '') + (c.light ? ' light' : '') + '" style="background-color:' + c.hex + '"></div>'
+            + '<span class="pc-clr-label">' + esc(c.name) + '</span>'
+            + '</button>';
+        }).join('')
+        + '</div>';
+    }
+
+    if (v.type === 'size') {
+      var cur = state.selections[key];
+      var youthBtns = v.youth.map(function(opt, i) {
+        return '<button class="pc-btn pc-size' + (cur === opt ? ' pc-sel' : '') + '" onclick="pcSel(\'' + key + '\',' + i + ')">'
+          + esc(opt.replace('Youth ','')) + '</button>';
+      }).join('');
+      var adultBtns = v.adult.map(function(opt, i) {
+        return '<button class="pc-btn pc-size' + (cur === opt ? ' pc-sel' : '') + '" onclick="pcSel(\'' + key + '\',' + (v.youth.length + i) + ')">'
+          + esc(opt.replace('Adult ','')) + '</button>';
+      }).join('');
+      return '<div class="pc-size-groups">'
+        + '<div><div class="pc-size-group-label">Youth</div><div class="pc-opts">' + youthBtns + '</div></div>'
+        + '<div><div class="pc-size-group-label">Adult</div><div class="pc-opts">' + adultBtns + '</div></div>'
+        + '</div>';
+    }
+
+    var cur = state.selections[key];
+    return '<div class="pc-opts">'
+      + v.options.map(function(opt, i) {
+        return '<button class="pc-btn' + (cur === opt ? ' pc-sel' : '') + '" onclick="pcSel(\'' + key + '\',' + i + ')">'
+          + esc(opt) + '</button>';
+      }).join('')
+      + '</div>';
+  }
+
+  /* ── Variant Sections HTML ────────────────────────── */
+  function variantSectionsHtml() {
+    return ORDER.map(function(key) {
+      var v   = VARIANTS[key];
+      var vis = state.visibility[key];
+      var sl  = selLabel(key);
+      var badge = sl
+        ? ('<span class="pc-sec-badge-done"><svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>' + esc(sl) + '</span>')
+        : '<span class="pc-sec-badge-req">Required</span>';
+
+      return '<div id="pc-wrap-' + key + '" class="pc-section-wrap' + (vis ? '' : ' pc-collapsed') + '">'
+        + '<div class="pc-section-inner">'
+        + '<div class="pc-card">'
+        + '<div class="pc-sec-header">'
+        + '<div class="pc-sec-header-left">'
+        + '<div class="pc-sec-icon-wrap">' + v.icon + '</div>'
+        + '<div><p class="pc-sec-title">' + v.label + '</p><p class="pc-sec-desc">' + v.desc + '</p></div>'
+        + '</div>'
+        + badge
+        + '</div>'
+        + '<div class="pc-sec-body">' + optionsHtml(key) + '</div>'
+        + '</div>'
+        + '</div></div>';
+    }).join('');
+  }
+
+  /* ── Order Summary HTML ───────────────────────────── */
+  function summaryHtml() {
+    var vk      = visibleKeys();
+    var done    = vk.filter(function(k){ return state.selections[k]; }).length;
+    var total   = vk.length;
+    var p       = pct();
+    var ready   = allSelected();
+    var remaining = total - done;
+
+    var logVis = state.selectionLog.filter(function(e){ return state.visibility[e.key]; });
+    var unsel  = vk.filter(function(k){ return !state.selections[k]; });
+    var isEmpty = logVis.length === 0 && unsel.length === 0;
+
+    var bodyContent = isEmpty
+      ? '<div class="pc-empty-state"><div class="pc-empty-state-icon">👆</div><div>Start selecting options<br>to build your order</div></div>'
+      : '';
+
+    bodyContent += logVis.map(function(entry, idx) {
+      var txt = entry.key === 'color' ? entry.value.name : entry.value;
+      var dot = entry.key === 'color'
+        ? '<div class="pc-order-color-dot" style="background:' + entry.value.hex + '"></div>' : '';
+      return '<div class="pc-order-item">'
+        + '<div class="pc-order-num">' + (idx + 1) + '</div>'
+        + '<div class="pc-order-info">'
+        + '<div class="pc-order-key">' + VARIANTS[entry.key].label + '</div>'
+        + '<div class="pc-order-val">' + dot + esc(txt) + '</div>'
+        + '</div>'
+        + '<button class="pc-order-clear" onclick="pcClear(\'' + entry.key + '\')" title="Remove">'
+        + '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>'
+        + '</button></div>';
+    }).join('');
+
+    bodyContent += unsel.map(function(key) {
+      return '<div class="pc-req-item">'
+        + '<div class="pc-req-q">?</div>'
+        + '<div><div class="pc-req-key">' + VARIANTS[key].label + '</div><div class="pc-req-val">Required</div></div>'
+        + '</div>';
+    }).join('');
+
+    var atcBtn = ready
+      ? '<button class="pc-atc ready" onclick="pcAddToCart()">'
+        + '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>'
+        + 'Add to Cart</button>'
+        + '<p class="pc-atc-note ready">✓ All options selected — ready!</p>'
+      : '<button class="pc-atc locked" disabled>'
+        + '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>'
+        + 'Select All Options</button>'
+        + '<p class="pc-atc-note locked">' + remaining + ' option' + (remaining !== 1 ? 's' : '') + ' remaining</p>';
+
+    return '<div class="pc-card pc-summary">'
+      + '<div class="pc-summary-head">'
+      + '<div class="pc-summary-top">'
+      + '<p class="pc-summary-title">Your Order</p>'
+      + '<span class="pc-summary-count">' + done + ' / ' + total + '</span>'
+      + '</div>'
+      + '<div class="pc-prog-track"><div class="pc-prog-bar" style="width:' + p + '%"></div></div>'
+      + '<div class="pc-prog-ends"><span>0%</span><span>100%</span></div>'
+      + '</div>'
+      + '<div class="pc-summary-body">' + bodyContent + '</div>'
+      + '<div class="pc-divider"></div>'
+      + '<div class="pc-atc-wrap">' + atcBtn + '</div>'
+      + '</div>';
+  }
+
+  /* ── Toast ────────────────────────────────────────── */
+  var toastTimer;
+  function showToast(msg) {
+    var el = document.getElementById('pc-toast');
+    var tx = document.getElementById('pc-toast-text');
+    if (!el) return;
+    tx.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ el.classList.remove('show'); }, 3800);
+  }
+
+  /* ── Mobile panel toggle ──────────────────────────── */
+  window.pcToggleMobilePanel = function() {
+    state.mobPanelOpen = !state.mobPanelOpen;
+    var panel   = document.getElementById('pc-mob-panel');
+    var chevron = document.getElementById('pc-mob-chevron');
+    if (!panel) return;
+    if (state.mobPanelOpen) {
+      document.getElementById('pc-mob-panel-content').innerHTML = mobPanelHtml();
+      panel.classList.add('open');
+      chevron.classList.add('open');
+    } else {
+      panel.classList.remove('open');
+      chevron.classList.remove('open');
+    }
+  };
+
+  /* ── Render ───────────────────────────────────────── */
+  function renderAll() {
+    // Control panel
+    var cp = document.getElementById('pc-ctrl-panel-content');
+    if (cp) cp.innerHTML = ctrlPanelHtml();
+
+    // Mobile panel (if open)
+    if (state.mobPanelOpen) {
+      var mp = document.getElementById('pc-mob-panel-content');
+      if (mp) mp.innerHTML = mobPanelHtml();
+    }
+
+    // Variant sections
+    var vs = document.getElementById('pc-variant-sections');
+    if (vs) vs.innerHTML = variantSectionsHtml();
+
+    // Apply collapse classes
+    ORDER.forEach(function(key) {
+      var el = document.getElementById('pc-wrap-' + key);
+      if (!el) return;
+      if (state.visibility[key]) {
+        el.classList.remove('pc-collapsed');
+      } else {
+        el.classList.add('pc-collapsed');
+      }
+    });
+
+    // Order summaries
+    var sd = document.getElementById('pc-summary-desktop');
+    if (sd) sd.innerHTML = summaryHtml();
+    var sm = document.getElementById('pc-summary-mobile');
+    if (sm) sm.innerHTML = summaryHtml();
+  }
+
+  /* ── Global callbacks (called from inline onclick) ── */
+  window.pcSel          = selectOption;
+  window.pcClear        = clearSelection;
+  window.pcToggleVis    = toggleVisibility;
+  window.pcShowAll      = showAll;
+  window.pcReset        = resetSelections;
+  window.pcAddToCart    = handleAddToCart;
+
+  /* ── Init ─────────────────────────────────────────── */
+  document.addEventListener('DOMContentLoaded', renderAll);
+
+})();
+</script>
+
+{% schema %}
+{
+  "name": "Product Configurator",
+  "tag": "section",
+  "class": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Product Configurator"
+    },
+    {
+      "type": "header",
+      "content": "Section padding"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "Top padding",
+      "default": 36
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "Bottom padding",
+      "default": 36
+    }
+  ],
+  "presets": [
+    {
+      "name": "Product Configurator"
+    }
+  ]
+}
+{% endschema %}

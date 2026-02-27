@@ -1,0 +1,326 @@
+{% comment %}
+  Checkout Popup - Intercepts all checkout buttons to ask
+  whether the customer wants school pickup or shipping.
+{% endcomment %}
+
+<style>
+  .checkout-popup-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 99999;
+    justify-content: center;
+    align-items: center;
+  }
+  .checkout-popup-overlay.is-visible {
+    display: flex;
+  }
+  .checkout-popup {
+    background: #fff;
+    border-radius: 12px;
+    padding: 2rem;
+    max-width: 480px;
+    width: 90%;
+    position: relative;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  }
+  .checkout-popup__close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.25rem;
+    line-height: 1;
+  }
+  .checkout-popup__close svg {
+    width: 20px;
+    height: 20px;
+  }
+  .checkout-popup__title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin: 0 0 1.5rem;
+    padding-right: 2rem;
+  }
+  .checkout-popup__options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .checkout-popup__option {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    background: #fff;
+  }
+  .checkout-popup__option:hover {
+    border-color: #333;
+  }
+  .checkout-popup__option.is-selected {
+    border-color: rgb(var(--color-base-text));
+    background: rgba(var(--color-base-text), 0.03);
+  }
+  .checkout-popup__option input[type="radio"] {
+    accent-color: rgb(var(--color-base-text));
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    flex-shrink: 0;
+  }
+  .checkout-popup__option-label {
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+  .checkout-popup__student-field {
+    display: none;
+    margin-top: 1.25rem;
+  }
+  .checkout-popup__student-field.is-visible {
+    display: block;
+  }
+  .checkout-popup__student-field label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+  }
+  .checkout-popup__student-field input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 1rem;
+  }
+  .checkout-popup__student-field input:focus {
+    outline: none;
+    border-color: rgb(var(--color-base-text));
+    box-shadow: 0 0 0 1px rgb(var(--color-base-text));
+  }
+  .checkout-popup__error {
+    color: #e00;
+    font-size: 0.85rem;
+    margin-top: 0.35rem;
+    display: none;
+  }
+  .checkout-popup__submit {
+    margin-top: 1.5rem;
+    width: 100%;
+    padding: 1rem;
+    font-size: 1.05rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    background: rgb(var(--color-base-solid-button-labels));
+    color: rgb(var(--color-base-background-1));
+    background: rgb(var(--color-base-text));
+    color: rgb(var(--color-base-background-1));
+    transition: opacity 0.2s;
+    display: none;
+  }
+  .checkout-popup__submit.is-visible {
+    display: block;
+  }
+  .checkout-popup__submit:hover {
+    opacity: 0.85;
+  }
+  .checkout-popup__submit:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+</style>
+
+<div id="checkout-popup-overlay" class="checkout-popup-overlay" aria-hidden="true">
+  <div class="checkout-popup" role="dialog" aria-modal="true" aria-label="Choose delivery method">
+    <button class="checkout-popup__close" id="checkout-popup-close" aria-label="Close">
+      <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M15 5L5 15M5 5l10 10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </button>
+
+    <h2 class="checkout-popup__title">How would you like to receive your order?</h2>
+
+    <div class="checkout-popup__options">
+      <label class="checkout-popup__option" id="option-school">
+        <input type="radio" name="checkout-delivery" value="school">
+        <span class="checkout-popup__option-label">Pickup from School</span>
+      </label>
+      <label class="checkout-popup__option" id="option-ship">
+        <input type="radio" name="checkout-delivery" value="ship">
+        <span class="checkout-popup__option-label">Ship / Pickup from Other Address</span>
+      </label>
+    </div>
+
+    <div class="checkout-popup__student-field" id="student-name-field">
+      <label for="checkout-student-name">Add your student name</label>
+      <input type="text" id="checkout-student-name" placeholder="Enter student name">
+      <p class="checkout-popup__error" id="student-name-error">Please enter the student name.</p>
+    </div>
+
+    <button type="button" class="checkout-popup__submit" id="checkout-popup-continue">
+      Continue to Checkout
+    </button>
+  </div>
+</div>
+
+<script>
+  (function() {
+    var overlay = document.getElementById('checkout-popup-overlay');
+    var closeBtn = document.getElementById('checkout-popup-close');
+    var studentField = document.getElementById('student-name-field');
+    var studentInput = document.getElementById('checkout-student-name');
+    var studentError = document.getElementById('student-name-error');
+    var continueBtn = document.getElementById('checkout-popup-continue');
+    var radios = document.querySelectorAll('input[name="checkout-delivery"]');
+    var optionLabels = document.querySelectorAll('.checkout-popup__option');
+    var pendingForm = null;
+    var pendingButton = null;
+    var selectedOption = null;
+
+    function openPopup() {
+      overlay.classList.add('is-visible');
+      overlay.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closePopup() {
+      overlay.classList.remove('is-visible');
+      overlay.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+      resetPopup();
+    }
+
+    function resetPopup() {
+      selectedOption = null;
+      radios.forEach(function(r) { r.checked = false; });
+      optionLabels.forEach(function(l) { l.classList.remove('is-selected'); });
+      studentField.classList.remove('is-visible');
+      studentInput.value = '';
+      studentError.style.display = 'none';
+      continueBtn.classList.remove('is-visible');
+      continueBtn.disabled = false;
+      continueBtn.textContent = 'Continue to Checkout';
+      pendingForm = null;
+      pendingButton = null;
+    }
+
+    function isCheckoutButton(el) {
+      if (!el) return false;
+      if (el.name === 'checkout') return true;
+      if (el.id === 'checkout' || el.id === 'CartDrawer-Checkout') return true;
+      if (el.closest && el.closest('#cart-notification-form')) {
+        return el.name === 'checkout';
+      }
+      return false;
+    }
+
+    function isDynamicCheckoutButton(el) {
+      if (!el) return false;
+      return !!(el.closest && el.closest('.cart__dynamic-checkout-buttons'));
+    }
+
+    function interceptCheckout(e) {
+      var btn = e.target.closest('button, a, [role="button"]');
+      if (!btn) return;
+
+      if (isCheckoutButton(btn) || isDynamicCheckoutButton(btn)) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+
+        var form = btn.form || btn.closest('form');
+        pendingForm = form;
+        pendingButton = btn;
+        openPopup();
+        return false;
+      }
+    }
+
+    document.addEventListener('click', interceptCheckout, true);
+
+    radios.forEach(function(radio) {
+      radio.addEventListener('change', function() {
+        selectedOption = this.value;
+        optionLabels.forEach(function(l) { l.classList.remove('is-selected'); });
+        this.closest('.checkout-popup__option').classList.add('is-selected');
+
+        if (selectedOption === 'school') {
+          studentField.classList.add('is-visible');
+          studentInput.focus();
+        } else {
+          studentField.classList.remove('is-visible');
+          studentError.style.display = 'none';
+        }
+        continueBtn.classList.add('is-visible');
+      });
+    });
+
+    closeBtn.addEventListener('click', closePopup);
+
+    overlay.addEventListener('click', function(e) {
+      if (e.target === overlay) closePopup();
+    });
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && overlay.classList.contains('is-visible')) {
+        closePopup();
+      }
+    });
+
+    function proceedToCheckout(attributes) {
+      continueBtn.disabled = true;
+      continueBtn.textContent = 'Processing...';
+
+      fetch('/cart/update.js', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ attributes: attributes })
+      })
+      .then(function(res) { return res.json(); })
+      .then(function() {
+        window.location.href = '/checkout';
+      })
+      .catch(function() {
+        window.location.href = '/checkout';
+      });
+    }
+
+    continueBtn.addEventListener('click', function() {
+      if (selectedOption === 'school') {
+        var name = studentInput.value.trim();
+        if (!name) {
+          studentError.style.display = 'block';
+          studentInput.focus();
+          return;
+        }
+        studentError.style.display = 'none';
+        proceedToCheckout({
+          'Delivery Method': 'School Pickup',
+          'Student Name': name
+        });
+      } else if (selectedOption === 'ship') {
+        proceedToCheckout({
+          'Delivery Method': 'Ship / Other Address',
+          'Student Name': ''
+        });
+      }
+    });
+
+    studentInput.addEventListener('input', function() {
+      if (this.value.trim()) {
+        studentError.style.display = 'none';
+      }
+    });
+  })();
+</script>
